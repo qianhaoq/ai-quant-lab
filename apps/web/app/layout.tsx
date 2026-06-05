@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI 量化实验室",
-  description: "研究模式的 AI-native 量化回测平台"
+  title: "AI 量化交易平台",
+  description: "带交易网关、风控预检和 AI 信号研究的 AI-native 量化交易平台"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

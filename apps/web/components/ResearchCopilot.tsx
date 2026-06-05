@@ -10,7 +10,7 @@ type Props = {
 };
 
 export function ResearchCopilot({ backtestId }: Props) {
-  const [question, setQuestion] = useState("在信任这次回测之前，我应该重点检查什么？");
+  const [question, setQuestion] = useState("基于当前账户状态，AI 生成交易信号前应该检查哪些风险？");
   const [response, setResponse] = useState<ResearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +54,7 @@ export function ResearchCopilot({ backtestId }: Props) {
           </ul>
         </>
       ) : (
-        <p className="empty-state">运行回测后，AI 会结合结果给出更具体的分析。</p>
+        <p className="empty-state">AI 只生成信号假设和风控检查，不直接提交订单。</p>
       )}
     </form>
   );

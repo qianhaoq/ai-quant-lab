@@ -5,14 +5,28 @@ from app.ai import research_chat
 from app.backtester import BacktestError, run_backtest
 from app.config import get_settings
 from app.data_provider import DataProviderError, bars_to_models, get_sample_bars, list_symbols
+from app.trading import (
+    TradingGatewayError,
+    build_status,
+    get_account,
+    get_positions,
+    preview_order,
+    submit_order,
+)
 from app.models import (
+    AccountSnapshot,
     BacktestRequest,
     BacktestResult,
     Bar,
     HealthResponse,
+    OrderIntent,
+    OrderPreview,
+    OrderReceipt,
+    PositionSnapshot,
     ResearchRequest,
     ResearchResponse,
     Symbol,
+    TradingStatusResponse,
 )
 
 settings = get_settings()
@@ -20,7 +34,7 @@ settings = get_settings()
 app = FastAPI(
     title="ai-quant-lab API",
     version="0.1.0",
-    description="Research-only API for sample market data, backtests, and AI analysis.",
+    description="AI quant trading API with guarded broker gateway, risk precheck, and AI research support.",
 )
 app.add_middleware(
     CORSMiddleware,
@@ -81,6 +95,43 @@ def get_backtest(backtest_id: str) -> BacktestResult:
     if not result:
         raise HTTPException(status_code=404, detail="Backtest not found")
     return result
+
+
+@app.get("/trading/status", response_model=TradingStatusResponse)
+def trading_status() -> TradingStatusResponse:
+    return build_status(settings)
+
+
+@app.get("/trading/account", response_model=AccountSnapshot)
+def trading_account() -> AccountSnapshot:
+    try:
+        return get_account(settings)
+    except TradingGatewayError as error:
+        raise HTTPException(status_code=error.status_code, detail=str(error)) from error
+
+
+@app.get("/trading/positions", response_model=list[PositionSnapshot])
+def trading_positions() -> list[PositionSnapshot]:
+    try:
+        return get_positions(settings)
+    except TradingGatewayError as error:
+        raise HTTPException(status_code=error.status_code, detail=str(error)) from error
+
+
+@app.post("/trading/orders/preview", response_model=OrderPreview)
+def trading_order_preview(request: OrderIntent) -> OrderPreview:
+    try:
+        return preview_order(request, settings)
+    except TradingGatewayError as error:
+        raise HTTPException(status_code=error.status_code, detail=str(error)) from error
+
+
+@app.post("/trading/orders", response_model=OrderReceipt, status_code=201)
+def trading_order_submit(request: OrderIntent) -> OrderReceipt:
+    try:
+        return submit_order(request, settings)
+    except TradingGatewayError as error:
+        raise HTTPException(status_code=error.status_code, detail=str(error)) from error
 
 
 @app.post("/research/chat", response_model=ResearchResponse)

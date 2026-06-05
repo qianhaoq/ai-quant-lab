@@ -20,6 +20,7 @@
 
 ## Risk Notes
 
-- Financial/research-only boundary preserved:
+- Trading safety boundary preserved:
+- Risk precheck and human confirmation preserved:
 - Data provider or secret handling changed:
 - AI behavior changed:

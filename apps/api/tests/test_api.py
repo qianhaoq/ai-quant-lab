@@ -113,4 +113,82 @@ def test_research_chat_uses_mock_without_openai_key() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["used_mock"] is True
-    assert "研究模式摘要" in payload["answer"]
+    assert "交易研究摘要" in payload["answer"]
+
+
+def test_trading_status_defaults_to_internal_sandbox() -> None:
+    response = client.get("/trading/status")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["provider"] == "internal_sandbox"
+    assert payload["mode"] == "sandbox"
+    assert payload["broker_connected"] is True
+    assert payload["trading_enabled"] is True
+    assert payload["requires_confirmation"] is True
+    assert payload["allowed_symbols"] == ["SPY", "QQQ", "AAPL"]
+
+
+def test_trading_account_and_positions_use_sandbox_snapshots() -> None:
+    account = client.get("/trading/account")
+    positions = client.get("/trading/positions")
+    assert account.status_code == 200
+    assert positions.status_code == 200
+    assert account.json()["account_id"] == "internal-sandbox"
+    assert [item["symbol"] for item in positions.json()] == ["SPY", "QQQ"]
+
+
+def test_order_preview_accepts_valid_sandbox_order() -> None:
+    response = client.post(
+        "/trading/orders/preview",
+        json={"symbol": "SPY", "side": "buy", "quantity": 2, "order_type": "market", "time_in_force": "day"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["accepted"] is True
+    assert payload["broker_provider"] == "internal_sandbox"
+    assert payload["confirmation_phrase"] == "确认提交 买入 2 SPY"
+    assert payload["estimated_notional"] > 0
+
+
+def test_order_preview_rejects_unknown_symbol() -> None:
+    response = client.post(
+        "/trading/orders/preview",
+        json={"symbol": "NOPE", "side": "buy", "quantity": 1, "order_type": "market", "time_in_force": "day"},
+    )
+    assert response.status_code == 400
+    assert "Unsupported symbol" in response.json()["detail"]
+
+
+def test_order_submit_requires_confirmation_phrase() -> None:
+    response = client.post(
+        "/trading/orders",
+        json={
+            "symbol": "SPY",
+            "side": "buy",
+            "quantity": 2,
+            "order_type": "market",
+            "time_in_force": "day",
+            "confirmation_phrase": "确认提交 买入 3 SPY",
+        },
+    )
+    assert response.status_code == 400
+    assert "确认短语不匹配" in response.json()["detail"]
+
+
+def test_order_submit_accepts_internal_sandbox_order() -> None:
+    response = client.post(
+        "/trading/orders",
+        json={
+            "symbol": "SPY",
+            "side": "buy",
+            "quantity": 2,
+            "order_type": "market",
+            "time_in_force": "day",
+            "confirmation_phrase": "确认提交 买入 2 SPY",
+        },
+    )
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["status"] == "accepted_sandbox"
+    assert payload["broker_order_id"] is None
+    assert "未发送到真实券商" in payload["message"]

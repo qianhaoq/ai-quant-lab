@@ -26,6 +26,7 @@ jobs:
           uvicorn app.main:app --host 127.0.0.1 --port 8000 &
           sleep 3
           curl --fail http://127.0.0.1:8000/health
+          curl --fail http://127.0.0.1:8000/trading/status
 
   web:
     runs-on: ubuntu-latest

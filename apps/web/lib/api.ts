@@ -1,4 +1,15 @@
-import type { BacktestRequest, BacktestResult, ResearchResponse, SymbolInfo } from "@/lib/types";
+import type {
+  AccountSnapshot,
+  BacktestRequest,
+  BacktestResult,
+  OrderIntent,
+  OrderPreview,
+  OrderReceipt,
+  PositionSnapshot,
+  ResearchResponse,
+  SymbolInfo,
+  TradingStatus
+} from "@/lib/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
@@ -33,5 +44,31 @@ export function askResearchCopilot(question: string, backtestId?: string) {
   return apiFetch<ResearchResponse>("/research/chat", {
     method: "POST",
     body: JSON.stringify({ question, backtest_id: backtestId })
+  });
+}
+
+export function fetchTradingStatus() {
+  return apiFetch<TradingStatus>("/trading/status");
+}
+
+export function fetchTradingAccount() {
+  return apiFetch<AccountSnapshot>("/trading/account");
+}
+
+export function fetchTradingPositions() {
+  return apiFetch<PositionSnapshot[]>("/trading/positions");
+}
+
+export function previewOrder(payload: OrderIntent) {
+  return apiFetch<OrderPreview>("/trading/orders/preview", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function submitOrder(payload: OrderIntent) {
+  return apiFetch<OrderReceipt>("/trading/orders", {
+    method: "POST",
+    body: JSON.stringify(payload)
   });
 }

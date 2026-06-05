@@ -13,8 +13,8 @@ describe("ResearchCopilot", () => {
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({
-        answer: "研究模式摘要：先和买入并持有基准对比。",
-        suggested_experiments: ["运行样本外测试。"],
+        answer: "交易研究摘要：先检查风控上限。",
+        suggested_experiments: ["运行 paper 订单生命周期测试。"],
         used_mock: true
       })
     } as Response);
@@ -25,8 +25,8 @@ describe("ResearchCopilot", () => {
     await user.click(screen.getByRole("button", { name: /询问 AI/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/研究模式摘要/)).toBeInTheDocument();
+      expect(screen.getByText(/交易研究摘要/)).toBeInTheDocument();
     });
-    expect(screen.getByText("运行样本外测试。")).toBeInTheDocument();
+    expect(screen.getByText("运行 paper 订单生命周期测试。")).toBeInTheDocument();
   });
 });
