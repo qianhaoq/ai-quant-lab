@@ -1,0 +1,33 @@
+name: Feature
+description: Plan a product or engineering feature
+title: "[Feature]: "
+labels: ["feature"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What problem are we solving?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: What must be true when this is done?
+      placeholder: |
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test Plan
+      description: Which checks should prove this works?
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks
+      description: Include data, AI, financial, security, or deployment risks.

@@ -1,0 +1,19 @@
+{
+  "name": "ai-quant-lab",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "web",
+  "workspaceFolder": "/workspace",
+  "forwardPorts": [3000, 8000, 5432],
+  "postCreateCommand": "corepack enable && pnpm install && pnpm api:install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "github.copilot"
+      ]
+    }
+  }
+}
