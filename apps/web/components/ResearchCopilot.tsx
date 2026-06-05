@@ -10,7 +10,7 @@ type Props = {
 };
 
 export function ResearchCopilot({ backtestId }: Props) {
-  const [question, setQuestion] = useState("What should I inspect before trusting this backtest?");
+  const [question, setQuestion] = useState("在信任这次回测之前，我应该重点检查什么？");
   const [response, setResponse] = useState<ResearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +23,7 @@ export function ResearchCopilot({ backtestId }: Props) {
       const nextResponse = await askResearchCopilot(question, backtestId);
       setResponse(nextResponse);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Research request failed");
+      setError(err instanceof Error ? err.message : "研究请求失败");
     } finally {
       setLoading(false);
     }
@@ -32,12 +32,12 @@ export function ResearchCopilot({ backtestId }: Props) {
   return (
     <form className="copilot" onSubmit={submit}>
       <label>
-        Ask research question
+        输入研究问题
         <textarea value={question} onChange={(event) => setQuestion(event.target.value)} />
       </label>
       <button type="submit" disabled={loading || question.trim().length < 3}>
         <Send size={16} />
-        {loading ? "Asking" : "Ask AI"}
+        {loading ? "分析中" : "询问 AI"}
       </button>
 
       {error ? <p className="error" role="alert">{error}</p> : null}
@@ -47,14 +47,14 @@ export function ResearchCopilot({ backtestId }: Props) {
           <div className="copilot-answer">
             <Bot size={16} aria-hidden="true" /> {response.answer}
           </div>
-          <ul className="suggestions" aria-label="Suggested experiments">
+          <ul className="suggestions" aria-label="建议实验">
             {response.suggested_experiments.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
         </>
       ) : (
-        <p className="empty-state">Attach a backtest result for more specific analysis.</p>
+        <p className="empty-state">运行回测后，AI 会结合结果给出更具体的分析。</p>
       )}
     </form>
   );

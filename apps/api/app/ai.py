@@ -6,24 +6,22 @@ def mock_research_response(request: ResearchRequest, backtest: BacktestResult | 
     if backtest:
         metrics = backtest.metrics
         answer = (
-            "Research-only summary: this backtest can be used to form hypotheses, not trading advice. "
-            f"For {backtest.symbol}, the selected strategy produced total return "
-            f"{metrics.total_return:.2%}, Sharpe {metrics.sharpe:.2f}, and max drawdown "
-            f"{metrics.max_drawdown:.2%}. The next useful step is to compare the result against "
-            "buy-and-hold and test nearby parameter values on a different date range."
+            "研究模式摘要：这次回测只能用于形成研究假设，不构成投资建议。"
+            f"{backtest.symbol} 的当前策略总收益为 {metrics.total_return:.2%}，"
+            f"夏普比率为 {metrics.sharpe:.2f}，最大回撤为 {metrics.max_drawdown:.2%}。"
+            "下一步建议先和买入并持有基准对比，再在不同时间窗口测试相邻参数。"
         )
     else:
         answer = (
-            "Research-only summary: start with a simple baseline such as buy-and-hold, then compare "
-            "a rule-based strategy against the same symbol and date range. Treat any AI-generated idea "
-            "as a hypothesis that must be validated by out-of-sample tests."
+            "研究模式摘要：先从买入并持有这类简单基准开始，再在同一标的和时间范围内对比规则策略。"
+            "任何 AI 生成的想法都应视为待验证假设，必须经过样本外测试。"
         )
     return ResearchResponse(
         answer=answer,
         suggested_experiments=[
-            "Run the same strategy on SPY, QQQ, and AAPL over the same window.",
-            "Compare against buy-and-hold before changing strategy parameters.",
-            "Shift the start and end dates to check whether the result is regime-dependent.",
+            "在 SPY、QQQ、AAPL 上用同一时间窗口运行相同策略。",
+            "调整策略参数前，先和买入并持有基准对比。",
+            "平移开始和结束日期，检查结果是否依赖特定市场阶段。",
         ],
         used_mock=True,
     )
@@ -46,15 +44,14 @@ async def research_chat(
                 {
                     "role": "system",
                     "content": (
-                        "You are an AI research copilot for a paper-only quantitative research app. "
-                        "Never provide investment advice, never recommend placing orders, and never "
-                        "generate executable broker instructions. Frame all output as hypotheses and "
-                        "validation steps."
+                        "你是一个研究模式量化应用里的 AI 研究助手。请使用中文回答。"
+                        "不要提供投资建议，不要推荐下单，不要生成可执行的券商指令。"
+                        "所有输出都必须表述为研究假设和验证步骤。"
                     ),
                 },
                 {
                     "role": "user",
-                    "content": f"Question: {request.question}\n\nBacktest context:\n{context}",
+                    "content": f"问题：{request.question}\n\n回测上下文：\n{context}",
                 },
             ],
             temperature=0.2,
@@ -65,9 +62,9 @@ async def research_chat(
         return ResearchResponse(
             answer=answer.strip(),
             suggested_experiments=[
-                "Re-run on a different market regime.",
-                "Compare to buy-and-hold and a no-trade baseline.",
-                "Inspect max drawdown before considering any next experiment.",
+                "在不同市场阶段重新运行策略。",
+                "和买入并持有、空仓基准同时对比。",
+                "在继续实验前先检查最大回撤和交易次数。",
             ],
             used_mock=False,
         )

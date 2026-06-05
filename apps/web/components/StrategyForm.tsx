@@ -11,10 +11,16 @@ type Props = {
 };
 
 const STRATEGIES: Array<{ value: StrategyName; label: string }> = [
-  { value: "buy_and_hold", label: "Buy and hold" },
-  { value: "moving_average_crossover", label: "Moving average crossover" },
-  { value: "rsi_mean_reversion", label: "RSI mean reversion" }
+  { value: "buy_and_hold", label: "买入并持有" },
+  { value: "moving_average_crossover", label: "均线交叉" },
+  { value: "rsi_mean_reversion", label: "RSI 均值回归" }
 ];
+
+const SYMBOL_LABELS: Record<string, string> = {
+  SPY: "标普 500 ETF",
+  QQQ: "纳指 100 ETF",
+  AAPL: "苹果公司"
+};
 
 export function StrategyForm({ symbols, loading, onSubmit }: Props) {
   const [symbol, setSymbol] = useState("SPY");
@@ -53,12 +59,12 @@ export function StrategyForm({ symbols, loading, onSubmit }: Props) {
   return (
     <form className="strategy-form" onSubmit={submit}>
       <label>
-        Symbol
+        标的
         <select value={symbol} onChange={(event) => setSymbol(event.target.value)}>
           {(symbols.length ? symbols : [{ symbol: "SPY", name: "SPDR S&P 500 ETF Trust", asset_class: "us_etf" }]).map(
             (item) => (
               <option key={item.symbol} value={item.symbol}>
-                {item.symbol} - {item.name}
+                {item.symbol} - {SYMBOL_LABELS[item.symbol] ?? item.name}
               </option>
             )
           )}
@@ -66,7 +72,7 @@ export function StrategyForm({ symbols, loading, onSubmit }: Props) {
       </label>
 
       <label>
-        Strategy
+        策略
         <select value={strategy} onChange={(event) => setStrategy(event.target.value as StrategyName)}>
           {STRATEGIES.map((item) => (
             <option key={item.value} value={item.value}>
@@ -78,17 +84,17 @@ export function StrategyForm({ symbols, loading, onSubmit }: Props) {
 
       <div className="form-row">
         <label>
-          Start date
+          开始日期
           <input type="date" value={start} onChange={(event) => setStart(event.target.value)} />
         </label>
         <label>
-          End date
+          结束日期
           <input type="date" value={end} onChange={(event) => setEnd(event.target.value)} />
         </label>
       </div>
 
       <label>
-        Initial cash
+        初始资金
         <input
           min={1000}
           step={1000}
@@ -101,7 +107,7 @@ export function StrategyForm({ symbols, loading, onSubmit }: Props) {
       {strategy === "moving_average_crossover" ? (
         <div className="form-row">
           <label>
-            Short window
+            短均线窗口
             <input
               min={2}
               type="number"
@@ -110,7 +116,7 @@ export function StrategyForm({ symbols, loading, onSubmit }: Props) {
             />
           </label>
           <label>
-            Long window
+            长均线窗口
             <input
               min={3}
               type="number"
@@ -124,7 +130,7 @@ export function StrategyForm({ symbols, loading, onSubmit }: Props) {
       {strategy === "rsi_mean_reversion" ? (
         <div className="form-row">
           <label>
-            Entry RSI
+            入场 RSI
             <input
               min={1}
               max={99}
@@ -134,7 +140,7 @@ export function StrategyForm({ symbols, loading, onSubmit }: Props) {
             />
           </label>
           <label>
-            Exit RSI
+            离场 RSI
             <input
               min={1}
               max={99}
@@ -148,7 +154,7 @@ export function StrategyForm({ symbols, loading, onSubmit }: Props) {
 
       <button className="secondary-button" type="submit" disabled={loading}>
         <Play size={16} />
-        {loading ? "Running" : "Run backtest"}
+        {loading ? "运行中" : "运行回测"}
       </button>
     </form>
   );

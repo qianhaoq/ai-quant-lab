@@ -28,7 +28,7 @@ export function Dashboard() {
       const nextResult = await createBacktest(payload);
       setResult(nextResult);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Backtest failed");
+      setError(err instanceof Error ? err.message : "回测失败");
     } finally {
       setLoading(false);
     }
@@ -42,19 +42,19 @@ export function Dashboard() {
             <Activity size={22} />
           </div>
           <div>
-            <h1>AI Quant Lab</h1>
-            <p>US equity and ETF research workspace</p>
+            <h1>AI 量化实验室</h1>
+            <p>美股与 ETF 的研究型回测工作台</p>
           </div>
         </div>
         <div className="status-strip" aria-label="Platform status">
           <span className="status-pill">
-            <ShieldCheck size={16} /> Research only
+            <ShieldCheck size={16} /> 研究模式
           </span>
           <span className="status-pill">
-            <Database size={16} /> Sample data
+            <Database size={16} /> 样例数据
           </span>
           <span className="status-pill">
-            <Bot size={16} /> Mock AI fallback
+            <Bot size={16} /> Mock AI 兜底
           </span>
         </div>
       </header>
@@ -62,7 +62,7 @@ export function Dashboard() {
       <div className="grid">
         <aside className="panel">
           <div className="panel-header">
-            <h2>Strategy Lab</h2>
+            <h2>策略实验室</h2>
             <FlaskConical size={18} aria-hidden="true" />
           </div>
           <div className="panel-body">
@@ -71,10 +71,10 @@ export function Dashboard() {
           </div>
         </aside>
 
-        <section className="panel" aria-label="Backtest results">
+        <section className="panel" aria-label="回测结果">
           <div className="panel-header">
-            <h2>{result ? `${result.symbol} Backtest` : "Backtest Results"}</h2>
-            <p className="risk-note">No orders or broker connections</p>
+            <h2>{result ? `${result.symbol} 回测` : "回测结果"}</h2>
+            <p className="risk-note">不连接券商，不产生订单</p>
           </div>
           <div className="panel-body">
             {result ? (
@@ -83,14 +83,14 @@ export function Dashboard() {
                 <EquityChart data={result.equity_curve} />
               </>
             ) : (
-              <p className="empty-state">Run a sample strategy to inspect metrics and equity curve.</p>
+              <p className="empty-state">运行一个样例策略，查看指标和资金曲线。</p>
             )}
           </div>
         </section>
 
         <aside className="panel">
           <div className="panel-header">
-            <h2>Research Copilot</h2>
+            <h2>AI 研究助手</h2>
             <Bot size={18} aria-hidden="true" />
           </div>
           <div className="panel-body">

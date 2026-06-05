@@ -113,4 +113,4 @@ def test_research_chat_uses_mock_without_openai_key() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["used_mock"] is True
-    assert "Research-only" in payload["answer"]
+    assert "研究模式摘要" in payload["answer"]

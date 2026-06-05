@@ -18,9 +18,9 @@ describe("MetricsGrid", () => {
       />
     );
 
-    expect(screen.getByText("Total Return")).toBeInTheDocument();
+    expect(screen.getByText("总收益")).toBeInTheDocument();
     expect(screen.getByText("12.34%")).toBeInTheDocument();
-    expect(screen.getByText("Sharpe")).toBeInTheDocument();
+    expect(screen.getByText("夏普比率")).toBeInTheDocument();
     expect(screen.getByText("1.42")).toBeInTheDocument();
   });
 });

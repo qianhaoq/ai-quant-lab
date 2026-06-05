@@ -25,7 +25,7 @@ export function EquityChart({ data }: Props) {
   const endLabel = data[data.length - 1]?.date ?? "";
 
   return (
-    <svg className="chart-frame" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Equity curve">
+    <svg className="chart-frame" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="资金曲线">
       <line className="chart-axis" x1={padding.left} y1={padding.top} x2={padding.left} y2={height - padding.bottom} />
       <line
         className="chart-axis"

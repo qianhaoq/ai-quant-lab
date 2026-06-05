@@ -13,20 +13,20 @@ describe("ResearchCopilot", () => {
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({
-        answer: "Research-only summary: compare against buy-and-hold.",
-        suggested_experiments: ["Run an out-of-sample test."],
+        answer: "研究模式摘要：先和买入并持有基准对比。",
+        suggested_experiments: ["运行样本外测试。"],
         used_mock: true
       })
     } as Response);
 
     render(<ResearchCopilot backtestId="bt_123" />);
-    await user.clear(screen.getByLabelText("Ask research question"));
-    await user.type(screen.getByLabelText("Ask research question"), "What next?");
-    await user.click(screen.getByRole("button", { name: /ask ai/i }));
+    await user.clear(screen.getByLabelText("输入研究问题"));
+    await user.type(screen.getByLabelText("输入研究问题"), "下一步？");
+    await user.click(screen.getByRole("button", { name: /询问 AI/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Research-only summary/)).toBeInTheDocument();
+      expect(screen.getByText(/研究模式摘要/)).toBeInTheDocument();
     });
-    expect(screen.getByText("Run an out-of-sample test.")).toBeInTheDocument();
+    expect(screen.getByText("运行样本外测试。")).toBeInTheDocument();
   });
 });

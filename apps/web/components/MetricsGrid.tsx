@@ -5,13 +5,13 @@ type Props = {
 };
 
 const METRICS: Array<{ key: keyof Metrics; label: string; format: "percent" | "number" | "integer" }> = [
-  { key: "total_return", label: "Total Return", format: "percent" },
-  { key: "cagr", label: "CAGR", format: "percent" },
-  { key: "volatility", label: "Volatility", format: "percent" },
-  { key: "sharpe", label: "Sharpe", format: "number" },
-  { key: "max_drawdown", label: "Max Drawdown", format: "percent" },
-  { key: "win_rate", label: "Win Rate", format: "percent" },
-  { key: "trade_count", label: "Trades", format: "integer" }
+  { key: "total_return", label: "总收益", format: "percent" },
+  { key: "cagr", label: "年化收益", format: "percent" },
+  { key: "volatility", label: "波动率", format: "percent" },
+  { key: "sharpe", label: "夏普比率", format: "number" },
+  { key: "max_drawdown", label: "最大回撤", format: "percent" },
+  { key: "win_rate", label: "胜率", format: "percent" },
+  { key: "trade_count", label: "交易次数", format: "integer" }
 ];
 
 export function MetricsGrid({ metrics }: Props) {

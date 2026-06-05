@@ -14,9 +14,9 @@ describe("StrategyForm", () => {
     const onSubmit = vi.fn();
     render(<StrategyForm symbols={symbols} loading={false} onSubmit={onSubmit} />);
 
-    await user.selectOptions(screen.getByLabelText("Symbol"), "AAPL");
-    await user.selectOptions(screen.getByLabelText("Strategy"), "buy_and_hold");
-    await user.click(screen.getByRole("button", { name: /run backtest/i }));
+    await user.selectOptions(screen.getByLabelText("标的"), "AAPL");
+    await user.selectOptions(screen.getByLabelText("策略"), "buy_and_hold");
+    await user.click(screen.getByRole("button", { name: /运行回测/i }));
 
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
