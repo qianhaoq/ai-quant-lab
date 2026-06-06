@@ -4,7 +4,9 @@
   "service": "web",
   "workspaceFolder": "/workspace",
   "forwardPorts": [3000, 8000, 5432],
-  "postCreateCommand": "corepack enable && pnpm install && pnpm api:install",
+  "onCreateCommand": "corepack enable",
+  "updateContentCommand": "pnpm install --frozen-lockfile && pnpm api:install",
+  "postCreateCommand": "node --version && pnpm --version && python3 --version",
   "customizations": {
     "vscode": {
       "extensions": [
