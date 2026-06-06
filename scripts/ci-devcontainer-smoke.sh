@@ -10,7 +10,7 @@ pnpm --version
 pnpm install --frozen-lockfile
 pnpm api:install
 pnpm api:test
+pnpm test
 pnpm typecheck
 pnpm lint
-pnpm run runner:test
 pnpm build
