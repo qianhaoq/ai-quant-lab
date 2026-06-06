@@ -223,15 +223,13 @@ def _submit_alpaca_order(intent: OrderIntent, preview: OrderPreview, settings: S
     }
     if intent.order_type == "limit" and intent.limit_price is not None:
         body["limit_price"] = intent.limit_price
-    response = httpx.post(
+    response = _alpaca_request(
+        "post",
         f"{base_url}/v2/orders",
-        headers=_alpaca_headers(settings),
+        settings=settings,
+        error_prefix="Alpaca 订单提交失败",
         json=body,
-        timeout=10,
     )
-    if response.status_code >= 400:
-        detail = response.json().get("message", response.text) if response.content else response.text
-        raise TradingGatewayError(f"Alpaca 订单提交失败：{detail}", status_code=502)
     payload = response.json()
     receipt = OrderReceipt(
         id=f"alpaca_{uuid4().hex[:12]}",
@@ -254,9 +252,12 @@ def _submit_alpaca_order(intent: OrderIntent, preview: OrderPreview, settings: S
 
 def _get_alpaca_account(settings: Settings) -> AccountSnapshot:
     _require_alpaca_credentials(settings)
-    response = httpx.get(f"{_alpaca_base_url(_broker_mode(settings))}/v2/account", headers=_alpaca_headers(settings), timeout=10)
-    if response.status_code >= 400:
-        raise TradingGatewayError("无法读取 Alpaca 账户快照。", status_code=502)
+    response = _alpaca_request(
+        "get",
+        f"{_alpaca_base_url(_broker_mode(settings))}/v2/account",
+        settings=settings,
+        error_prefix="无法读取 Alpaca 账户快照",
+    )
     payload = response.json()
     return AccountSnapshot(
         account_id=str(payload.get("id", "alpaca")),
@@ -269,13 +270,12 @@ def _get_alpaca_account(settings: Settings) -> AccountSnapshot:
 
 def _get_alpaca_positions(settings: Settings) -> list[PositionSnapshot]:
     _require_alpaca_credentials(settings)
-    response = httpx.get(
+    response = _alpaca_request(
+        "get",
         f"{_alpaca_base_url(_broker_mode(settings))}/v2/positions",
-        headers=_alpaca_headers(settings),
-        timeout=10,
+        settings=settings,
+        error_prefix="无法读取 Alpaca 持仓",
     )
-    if response.status_code >= 400:
-        raise TradingGatewayError("无法读取 Alpaca 持仓。", status_code=502)
     positions = []
     for item in response.json():
         quantity = float(item.get("qty", 0))
@@ -384,3 +384,33 @@ def _alpaca_headers(settings: Settings) -> dict[str, str]:
         "APCA-API-KEY-ID": settings.alpaca_api_key_id or "",
         "APCA-API-SECRET-KEY": settings.alpaca_api_secret_key or "",
     }
+
+
+def _alpaca_request(method: str, url: str, settings: Settings, error_prefix: str, **kwargs) -> httpx.Response:
+    try:
+        if method == "get":
+            response = httpx.get(url, headers=_alpaca_headers(settings), timeout=10, **kwargs)
+        elif method == "post":
+            response = httpx.post(url, headers=_alpaca_headers(settings), timeout=10, **kwargs)
+        else:
+            raise TradingGatewayError(f"Unsupported Alpaca method: {method}", status_code=500)
+    except httpx.HTTPError as error:
+        raise TradingGatewayError(f"{error_prefix}：{error}", status_code=502) from error
+
+    if response.status_code >= 400:
+        raise TradingGatewayError(f"{error_prefix}：{_response_error_detail(response)}", status_code=502)
+    return response
+
+
+def _response_error_detail(response: httpx.Response) -> str:
+    if response.content:
+        try:
+            payload = response.json()
+        except ValueError:
+            return response.text
+        if isinstance(payload, dict):
+            detail = payload.get("message") or payload.get("detail") or payload.get("error")
+            if detail:
+                return str(detail)
+        return str(payload)
+    return response.text or f"HTTP {response.status_code}"
