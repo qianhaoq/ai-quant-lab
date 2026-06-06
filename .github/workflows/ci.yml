@@ -47,5 +47,7 @@ jobs:
         run: pnpm lint
       - name: Unit tests
         run: pnpm test
+      - name: Runner tests
+        run: pnpm runner:test
       - name: Build
         run: pnpm build

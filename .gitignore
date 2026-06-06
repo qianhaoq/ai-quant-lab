@@ -21,3 +21,6 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+
+tools/linear-runner/state/*
+!tools/linear-runner/state/.gitkeep
