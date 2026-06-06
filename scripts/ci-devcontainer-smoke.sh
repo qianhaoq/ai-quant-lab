@@ -12,5 +12,5 @@ pnpm api:install
 pnpm api:test
 pnpm typecheck
 pnpm lint
-pnpm runner:test
+pnpm run runner:test
 pnpm build
