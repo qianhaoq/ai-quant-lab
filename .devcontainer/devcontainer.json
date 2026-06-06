@@ -5,7 +5,7 @@
   "workspaceFolder": "/workspace",
   "overrideCommand": true,
   "forwardPorts": [3000, 8000, 5432],
-  "onCreateCommand": "corepack enable",
+  "onCreateCommand": "sudo npm install -g pnpm@10.12.1",
   "updateContentCommand": "pnpm install --frozen-lockfile && pnpm api:install",
   "postCreateCommand": "node --version && pnpm --version && python3 --version",
   "customizations": {
