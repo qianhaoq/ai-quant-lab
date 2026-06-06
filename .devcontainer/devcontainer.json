@@ -3,6 +3,7 @@
   "dockerComposeFile": "../docker-compose.yml",
   "service": "web",
   "workspaceFolder": "/workspace",
+  "overrideCommand": true,
   "forwardPorts": [3000, 8000, 5432],
   "onCreateCommand": "corepack enable",
   "updateContentCommand": "pnpm install --frozen-lockfile && pnpm api:install",
