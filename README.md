@@ -127,6 +127,20 @@ The app is designed to remain usable when `OPENAI_API_KEY` and broker credential
 4. For broker work, require a risk note covering credentials, live toggle, order lifecycle, and failure modes.
 5. Use AI review as the first pass, then human review as the final gate.
 
+### Linear Queue Runner
+
+This repo includes a local Linear queue runner for the AI-native workflow:
+
+```bash
+export LINEAR_API_KEY=<linear-api-key>
+pnpm runner:dry-run
+pnpm runner:once
+```
+
+The runner pulls issues from `待 Agent 处理`, moves the selected issue to `Agent 执行中`, creates an isolated git worktree, runs `codex exec`, reruns tests, opens a GitHub draft PR, and writes the result back to Linear. It never merges PRs automatically. Issues labeled `risk:trading` are blocked by default unless `RUNNER_ALLOW_TRADING_RISK=true` is set, and they still end in human review.
+
+See `docs/ai-native-runner.md` for setup, safety policy, cron rollout, and webhook rollout.
+
 Reference research for reusable trading systems is captured in `docs/research/github-trading-systems.md`.
 
 ## Safety

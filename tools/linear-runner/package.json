@@ -1,0 +1,12 @@
+{
+  "name": "@ai-quant-lab/linear-runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dry-run": "node src/index.mjs --dry-run",
+    "once": "node src/index.mjs --once",
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check src/index.mjs"
+  }
+}
