@@ -24,6 +24,8 @@ jobs:
         working-directory: apps/api
         run: |
           uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
           sleep 3
           curl --fail http://127.0.0.1:8000/health
           curl --fail http://127.0.0.1:8000/trading/status
