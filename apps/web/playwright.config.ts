@@ -11,8 +11,21 @@ export default defineConfig({
   webServer: [
     {
       command: "cd ../api && .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000",
+      env: {
+        API_TOKENS: '{"fake-e2e-token":"local-operator"}',
+        BROKER_OWNER_SUBJECT: "local-operator",
+        BROKER_ACCOUNT_ID: "internal-sandbox",
+        BROKER_PROVIDER: "internal_sandbox",
+        BROKER_MODE: "sandbox",
+        ENABLE_LIVE_TRADING: "false",
+        ENABLE_PAID_MODELS: "false",
+        OPENAI_API_KEY: "",
+        ALPACA_API_KEY_ID: "",
+        ALPACA_API_SECRET_KEY: "",
+        SAFETY_DB_PATH: `.local/e2e-${Date.now()}.sqlite3`
+      },
       port: 8000,
-      reuseExistingServer: true
+      reuseExistingServer: false
     },
     {
       command: "pnpm dev",

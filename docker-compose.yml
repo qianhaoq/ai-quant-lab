@@ -3,6 +3,11 @@ services:
     build:
       context: ./apps/api
     environment:
+      # Pass through only when explicitly configured; otherwise Settings fails closed.
+      API_TOKENS:
+      BROKER_OWNER_SUBJECT: ${BROKER_OWNER_SUBJECT:-local-operator}
+      BROKER_ACCOUNT_ID: ${BROKER_ACCOUNT_ID:-internal-sandbox}
+      ENABLE_PAID_MODELS: ${ENABLE_PAID_MODELS:-false}
       APP_ENV: development
       ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000,http://web:3000
       MARKET_DATA_PROVIDER: sample
@@ -16,7 +21,7 @@ services:
       ALPACA_API_KEY_ID: ${ALPACA_API_KEY_ID:-}
       ALPACA_API_SECRET_KEY: ${ALPACA_API_SECRET_KEY:-}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./apps/api:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -28,7 +33,7 @@ services:
     environment:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     volumes:
       - .:/workspace
     command: sh -c "corepack enable && pnpm install && pnpm --filter @ai-quant-lab/web dev"
@@ -42,7 +47,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quant}
       POSTGRES_DB: ${POSTGRES_DB:-quant_lab}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
 

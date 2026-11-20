@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("previews a guarded sandbox order and asks the AI researcher", async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem("aql-api-token", "fake-e2e-token"));
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "AI 量化交易平台" })).toBeVisible();
   await page.getByRole("button", { name: /风控预检/i }).click();

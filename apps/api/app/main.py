@@ -1,6 +1,7 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.security import principal, issue_approval, reserve_order, reserve_research, release_research
 from app.ai import research_chat
 from app.backtester import BacktestError, run_backtest
 from app.config import get_settings
@@ -45,6 +46,7 @@ app.add_middleware(
 )
 
 BACKTESTS: dict[str, BacktestResult] = {}
+BACKTEST_OWNERS: dict[str, str] = {}
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -72,7 +74,7 @@ def bars(
 
 
 @app.post("/backtests", response_model=BacktestResult, status_code=201)
-def create_backtest(request: BacktestRequest) -> BacktestResult:
+def create_backtest(request: BacktestRequest, subject: str = Depends(principal)) -> BacktestResult:
     if settings.market_data_provider != "sample":
         raise HTTPException(
             status_code=501,
@@ -84,13 +86,16 @@ def create_backtest(request: BacktestRequest) -> BacktestResult:
         normalized_request = request.model_copy(update={"symbols": [symbol]})
         result = run_backtest(normalized_request, frame)
         BACKTESTS[result.id] = result
+        BACKTEST_OWNERS[result.id] = subject
         return result
     except (DataProviderError, BacktestError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @app.get("/backtests/{backtest_id}", response_model=BacktestResult)
-def get_backtest(backtest_id: str) -> BacktestResult:
+def get_backtest(backtest_id: str, subject: str = Depends(principal)) -> BacktestResult:
+    if BACKTEST_OWNERS.get(backtest_id) != subject:
+        raise HTTPException(403, "Backtest not authorized")
     result = BACKTESTS.get(backtest_id)
     if not result:
         raise HTTPException(status_code=404, detail="Backtest not found")
@@ -98,12 +103,12 @@ def get_backtest(backtest_id: str) -> BacktestResult:
 
 
 @app.get("/trading/status", response_model=TradingStatusResponse)
-def trading_status() -> TradingStatusResponse:
+def trading_status(subject: str = Depends(principal)) -> TradingStatusResponse:
     return build_status(settings)
 
 
 @app.get("/trading/account", response_model=AccountSnapshot)
-def trading_account() -> AccountSnapshot:
+def trading_account(subject: str = Depends(principal)) -> AccountSnapshot:
     try:
         return get_account(settings)
     except TradingGatewayError as error:
@@ -111,7 +116,7 @@ def trading_account() -> AccountSnapshot:
 
 
 @app.get("/trading/positions", response_model=list[PositionSnapshot])
-def trading_positions() -> list[PositionSnapshot]:
+def trading_positions(subject: str = Depends(principal)) -> list[PositionSnapshot]:
     try:
         return get_positions(settings)
     except TradingGatewayError as error:
@@ -119,29 +124,49 @@ def trading_positions() -> list[PositionSnapshot]:
 
 
 @app.post("/trading/orders/preview", response_model=OrderPreview)
-def trading_order_preview(request: OrderIntent) -> OrderPreview:
+def trading_order_preview(request: OrderIntent, subject: str = Depends(principal)) -> OrderPreview:
     try:
-        return preview_order(request, settings)
+        preview = preview_order(request, settings)
+        if preview.accepted:
+            preview.approval_token = issue_approval(request, settings, subject)
+        return preview
     except TradingGatewayError as error:
         raise HTTPException(status_code=error.status_code, detail=str(error)) from error
 
 
 @app.post("/trading/orders", response_model=OrderReceipt, status_code=201)
-def trading_order_submit(request: OrderIntent) -> OrderReceipt:
+def trading_order_submit(request: OrderIntent, subject: str = Depends(principal)) -> OrderReceipt:
     try:
+        preview = preview_order(request, settings)
+        if not preview.accepted or request.confirmation_phrase != preview.confirmation_phrase:
+            raise HTTPException(400, "确认短语不匹配或风控未通过")
+        # Broker market prices cannot be bounded by sample data. Require a buy limit;
+        # reserve the single-order safety ceiling for sells (no assumed netting).
+        if preview.broker_provider == "alpaca" and request.side == "buy" and request.order_type != "limit":
+            raise HTTPException(400, "Broker buy orders require a limit price")
+        notional = max(preview.estimated_notional, (request.limit_price or 0) * request.quantity)
+        if preview.broker_provider == "alpaca" and request.side == "sell":
+            notional = max(notional, settings.max_order_notional)
+        reserve_order(request, settings, subject, notional)
         return submit_order(request, settings)
     except TradingGatewayError as error:
         raise HTTPException(status_code=error.status_code, detail=str(error)) from error
 
 
 @app.post("/research/chat", response_model=ResearchResponse)
-async def research(request: ResearchRequest) -> ResearchResponse:
+async def research(request: ResearchRequest, subject: str = Depends(principal)) -> ResearchResponse:
     backtest = None
     if request.backtest_id:
+        if BACKTEST_OWNERS.get(request.backtest_id) != subject:
+            raise HTTPException(403, "Backtest not authorized")
         backtest = BACKTESTS.get(request.backtest_id)
         if not backtest:
             raise HTTPException(status_code=404, detail="Backtest not found")
-    return await research_chat(request=request, settings=settings, backtest=backtest)
+    lease = reserve_research(settings)
+    try:
+        return await research_chat(request=request, settings=settings, backtest=backtest)
+    finally:
+        release_research(settings, lease)
 
 
 def _parse_date(value: str):

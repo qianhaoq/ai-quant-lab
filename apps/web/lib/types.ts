@@ -100,6 +100,7 @@ export type RiskCheck = {
 };
 
 export type OrderIntent = {
+  approval_token?: string | null;
   symbol: string;
   side: OrderSide;
   quantity: number;
@@ -111,6 +112,7 @@ export type OrderIntent = {
 };
 
 export type OrderPreview = {
+  approval_token?: string | null;
   accepted: boolean;
   broker_provider: string;
   broker_mode: BrokerMode;

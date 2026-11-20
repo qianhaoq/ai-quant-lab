@@ -80,7 +80,7 @@ export function TradingConsole({ symbols, status, onPreviewChange, onReceiptChan
     setLoadingSubmit(true);
     setError(null);
     try {
-      const receipt = await submitOrder({ ...buildIntent(), confirmation_phrase: preview.confirmation_phrase });
+      const receipt = await submitOrder({ ...buildIntent(), confirmation_phrase: preview.confirmation_phrase, approval_token: preview.approval_token });
       onReceiptChange(receipt);
     } catch (err) {
       setError(err instanceof Error ? err.message : "订单提交失败");

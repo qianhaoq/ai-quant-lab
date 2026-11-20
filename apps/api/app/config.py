@@ -1,9 +1,21 @@
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    api_tokens: dict[str, str] = Field(default_factory=dict, repr=False)
+    broker_owner_subject: str = "local-operator"
+    broker_account_id: str = "internal-sandbox"
+    safety_db_path: str = ".local/safety.sqlite3"
+    safety_max_orders: int = Field(default=10, gt=0)
+    safety_max_notional: float = Field(default=50000, gt=0, allow_inf_nan=False)
+    enable_paid_models: bool = False
+    safety_model_calls: int = Field(default=20, gt=0)
+    safety_model_total_tokens: int = Field(default=340000, gt=0)
+    safety_model_output_tokens: int = Field(default=1000, gt=0, le=2000)
+    safety_model_concurrency: int = Field(default=2, gt=0, le=4)
     app_env: str = "development"
     allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     market_data_provider: str = "sample"

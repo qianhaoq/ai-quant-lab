@@ -17,6 +17,8 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
+      ...(typeof window !== "undefined" && sessionStorage.getItem("aql-api-token")
+        ? { Authorization: `Bearer ${sessionStorage.getItem("aql-api-token")}` } : {}),
       "Content-Type": "application/json",
       ...(init?.headers || {})
     }

@@ -134,6 +134,8 @@ class RiskCheck(BaseModel):
 
 
 class OrderIntent(BaseModel):
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
+    approval_token: str | None = Field(default=None, max_length=128)
     symbol: str = Field(min_length=1, max_length=12)
     side: OrderSide
     quantity: float = Field(gt=0)
@@ -151,6 +153,7 @@ class OrderIntent(BaseModel):
 
 
 class OrderPreview(BaseModel):
+    approval_token: str | None = None
     accepted: bool
     broker_provider: str
     broker_mode: BrokerMode

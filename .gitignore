@@ -24,3 +24,6 @@ build/
 
 tools/linear-runner/state/*
 !tools/linear-runner/state/.gitkeep
+
+# Persistent local safety ledger
+.local/
