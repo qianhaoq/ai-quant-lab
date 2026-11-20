@@ -140,13 +140,9 @@ def trading_order_submit(request: OrderIntent, subject: str = Depends(principal)
         preview = preview_order(request, settings)
         if not preview.accepted or request.confirmation_phrase != preview.confirmation_phrase:
             raise HTTPException(400, "确认短语不匹配或风控未通过")
-        # Broker market prices cannot be bounded by sample data. Require a buy limit;
-        # reserve the single-order safety ceiling for sells (no assumed netting).
-        if preview.broker_provider == "alpaca" and request.side == "buy" and request.order_type != "limit":
-            raise HTTPException(400, "Broker buy orders require a limit price")
+        # Shared gateway risk checks reject all broker sells and market buys.
+        # This ledger reserves intent notional, not reconciled execution amounts.
         notional = max(preview.estimated_notional, (request.limit_price or 0) * request.quantity)
-        if preview.broker_provider == "alpaca" and request.side == "sell":
-            notional = max(notional, settings.max_order_notional)
         reserve_order(request, settings, subject, notional)
         return submit_order(request, settings)
     except TradingGatewayError as error:

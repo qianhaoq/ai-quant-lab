@@ -1,4 +1,10 @@
-"""Local safety controls; quotas are development defaults, not investment authority."""
+"""Local development reservations, not execution reconciliation or investment authority.
+
+Atomic approval consumption and cumulative reservations require one persistent
+SQLite file shared by all workers. Changing its path/deleting it resets quotas;
+separate ledgers are unsupported. Token reservations are not dollar bill caps.
+Order notional excludes fees and external orders, and is not a live fill cap.
+"""
 import hashlib
 import json
 import secrets

@@ -188,3 +188,78 @@ def test_new_preview_invalidates_old_and_mode_is_bound(monkeypatch):
     assert client.post('/trading/orders', json=first).status_code == 400
     monkeypatch.setattr(settings, 'broker_mode', 'alpaca_paper')
     assert client.post('/trading/orders', json=second).status_code == 400
+
+
+@pytest.mark.parametrize('provider,mode', [
+    ('alpaca', 'alpaca_live'), ('alpaca', 'alpaca_paper'),
+    ('alpaca_live', 'sandbox'), ('alpaca_paper', 'sandbox'),
+    (' ALPACA_LIVE ', 'sandbox'),
+])
+@pytest.mark.parametrize('symbol,quantity', [('SPY', 1), ('SPY', 30), ('AAPL', 1)])
+@pytest.mark.parametrize('order_type', ['market', 'limit'])
+def test_broker_sells_fail_closed_before_any_broker_call(monkeypatch, provider, mode, symbol, quantity, order_type):
+    from app import trading
+    from app.models import OrderIntent
+    calls = []
+    def fake_broker(*args, **kwargs):
+        calls.append((args, kwargs))
+        raise AssertionError('Rejected order reached broker')
+    monkeypatch.setattr(trading, '_alpaca_request', fake_broker)
+    monkeypatch.setattr(settings, 'broker_provider', provider)
+    monkeypatch.setattr(settings, 'broker_mode', mode)
+    monkeypatch.setattr(settings, 'enable_live_trading', True)
+    monkeypatch.setattr(settings, 'alpaca_api_key_id', 'synthetic-key')
+    monkeypatch.setattr(settings, 'alpaca_api_secret_key', 'synthetic-secret')
+    body = dict(symbol=symbol, side='sell', quantity=quantity, order_type=order_type)
+    if order_type == 'limit':
+        body['limit_price'] = 100
+    preview = client.post('/trading/orders/preview', json=body).json()
+    assert preview['accepted'] is False
+    assert not preview['approval_token']
+    # A valid bound approval injected as if issued before the policy change
+    # must not bypass the new submit-time risk check.
+    from app.security import issue_approval
+    body['approval_token'] = issue_approval(OrderIntent(**body), settings, settings.broker_owner_subject)
+    body['confirmation_phrase'] = preview['confirmation_phrase']
+    assert client.post('/trading/orders', json=body).status_code == 400
+    with pytest.raises(trading.TradingGatewayError):
+        trading.submit_order(OrderIntent(**body), settings)
+    assert calls == []
+
+
+def test_direct_broker_market_buy_cannot_bypass_gateway_risk(monkeypatch):
+    from app import trading
+    from app.models import OrderIntent
+    calls = []
+    monkeypatch.setattr(trading, '_alpaca_request', lambda *a, **kw: calls.append(a))
+    monkeypatch.setattr(settings, 'broker_provider', 'alpaca_live')
+    monkeypatch.setattr(settings, 'enable_live_trading', True)
+    monkeypatch.setattr(settings, 'alpaca_api_key_id', 'synthetic')
+    monkeypatch.setattr(settings, 'alpaca_api_secret_key', 'synthetic')
+    preview = trading.preview_order(OrderIntent(**intent), settings)
+    assert not preview.accepted
+    with pytest.raises(trading.TradingGatewayError):
+        trading.submit_order(OrderIntent(**intent, confirmation_phrase=preview.confirmation_phrase), settings)
+    assert calls == []
+
+
+@pytest.mark.parametrize('value', [None, '{}'])
+def test_unset_and_empty_mapping_tokens_deny_authentication(monkeypatch, value):
+    if value is None:
+        monkeypatch.delenv('API_TOKENS', raising=False)
+    else:
+        monkeypatch.setenv('API_TOKENS', value)
+    empty = Settings(_env_file=None)
+    assert empty.api_tokens == {}
+    monkeypatch.setattr('app.security.get_settings', lambda: empty)
+    assert TestClient(app).get('/trading/status').status_code == 401
+    assert client.get('/trading/status').status_code == 401
+
+
+def test_empty_string_tokens_fail_closed_at_startup(monkeypatch):
+    # Compose passes an explicitly empty variable through. JSON decoding fails
+    # before app startup; it must never silently enable anonymous access.
+    from pydantic_settings import SettingsError
+    monkeypatch.setenv('API_TOKENS', '')
+    with pytest.raises(SettingsError, match='api_tokens'):
+        Settings(_env_file=None)

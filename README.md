@@ -36,7 +36,7 @@ Terminal 1:
 cd apps/api
 python3 -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
-.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Terminal 2:
@@ -150,7 +150,8 @@ This repository is a trading-platform scaffold, not a broker, investment adviser
 ### 本地 API 安全配置
 
 账户、持仓、订单、研究和回测 API 要求 `Authorization: Bearer <token>`。
-在服务端用 `API_TOKENS` 配置随机长令牌到稳定主体的 JSON 映射；没有配置时拒绝访问。
+在服务端用 `API_TOKENS` 配置随机长令牌到稳定主体的 JSON 映射；未设置或 `{}` 时受保护接口返回 401。
+显式空字符串（包括 Compose 空值透传）会在 Settings JSON 解析阶段阻止启动，不能匿名放行；要保留健康检查可将其设为 `{}`。
 只有 `BROKER_OWNER_SUBJECT` 可访问该实例唯一的 `BROKER_ACCOUNT_ID`，其他主体无权访问；
 多账户请使用独立实例、凭据和账本，不接受客户端选择其他券商账户。
 不要将令牌提交到仓库或放入 NEXT_PUBLIC 环境变量。浏览器本地调试可在开发控制台执行
@@ -159,14 +160,21 @@ This repository is a trading-platform scaffold, not a broker, investment adviser
 
 订单先调用 preview，再由人工复核并将返回的 `approval_token` 和确认短语一起提交；
 审批绑定主体、账户、券商模式和全部订单字段，5 分钟过期，仅一次有效，每个主体的新预检替换旧审批。
-Alpaca 买单必须使用限价，卖单预算至少按单笔安全金额上限预留。
+Alpaca（含 paper/live 和 provider 别名）仅允许限价买单；所有市价买单及所有卖单在共享风控层拒绝，预检不签发审批，提交前再次检查。
+卖出限价是价格下界，不能证明成交名义金额上界；因此连有持仓的卖单也拒绝，并覆盖无持仓或会新增空头的卖出。
 
 开发/安全默认累计限制：每账户 10 次提交、预留名义金额 50,000 美元；
 研究全实例 20 次调用、340,000 个保守预留 token，每次预留 16,000 输入加最多 1,000 输出，最多 2 个并发。
 **这些不是用户的真实投资授权额度，也不是实际美元模型账单估计。**
 失败或不确定结果仍消耗预算，不自动重试；额度不按时间自动重置。
-SQLite `.local/safety.sqlite3` 在重启和多 worker 间共享，必须保留；不要通过删除账本恢复额度。
+SQLite `.local/safety.sqlite3` 必须持久保存，所有 worker 必须指向同一文件；换路径或删库会重置额度，不是允许的恢复额度流程。
 多副本必须共享同一本地 SQLite 文件或另行实现统一预算服务，不支持分离账本的分布式部署。
 容器挂载保留此文件。默认不启用付费模型，即使有 key 也走 mock；需显式
 `ENABLE_PAID_MODELS=true` 才允许调用。实盘仍要求原有显式开关、风控和人工确认。
-Compose 发布端口及直接 API 开发命令默认仅回环监听。
+手工 uvicorn、api:dev 和 web dev 默认仅回环监听；Compose 仅在容器内部监听全接口以支持端口转发，宿主发布仍为回环。
+
+**不能直接实盘；线上是否暴露未知；累计金额不是实盘成交硬限。**
+账本保证同一文件内审批一次消费，以及通过 API 的提交尝试次数/名义金额预留累计检查，失败也扣留。
+内部沙箱只记录本系统确定的样本/限价估值回执，不执行成交、不更新真实持仓，不能作为组合持仓或实际成交对账。
+Alpaca 限价买单按数量乘限价（与估值取大者）预留，不含费用，也不覆盖应用外订单、券商行为或实际成交对账。
+模型 token 预算不是美元账单上限；不支持分离账本部署。

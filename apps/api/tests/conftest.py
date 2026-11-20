@@ -2,6 +2,14 @@
 import os
 import socket
 import pytest
+
+_SOCKET_CONNECT = socket.socket.connect
+
+@pytest.fixture
+def loopback_connector():
+    """Original connector for the explicitly loopback-bound HTTP smoke only."""
+    return _SOCKET_CONNECT
+
 os.environ.clear()
 os.environ.update({'API_TOKENS': '{"test-operator-token":"local-operator","test-other-token":"other"}', 'OPENAI_API_KEY': '', 'ALPACA_API_KEY_ID': '', 'ALPACA_API_SECRET_KEY': '', 'ENABLE_PAID_MODELS': 'false', 'BROKER_PROVIDER': 'internal_sandbox', 'BROKER_MODE': 'sandbox', 'ENABLE_LIVE_TRADING': 'false'})
 
