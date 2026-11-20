@@ -30,14 +30,18 @@ def mock_research_response(request: ResearchRequest, backtest: BacktestResult | 
 async def research_chat(
     request: ResearchRequest, settings: Settings, backtest: BacktestResult | None
 ) -> ResearchResponse:
-    if not settings.openai_api_key:
+    if not settings.enable_paid_models or not settings.openai_api_key:
         return mock_research_response(request, backtest)
 
     try:
         from openai import AsyncOpenAI
 
-        client = AsyncOpenAI(api_key=settings.openai_api_key)
+        client = AsyncOpenAI(api_key=settings.openai_api_key, max_retries=0, timeout=30)
         context = _format_backtest_context(backtest)
+        # Leave room for the fixed system prompt and message framing within the
+        # 16,000-token conservative input reservation (UTF-8 byte upper bound).
+        if len((request.question + context).encode("utf-8")) > 12000:
+            return mock_research_response(request, backtest)
         completion = await client.chat.completions.create(
             model=settings.openai_model,
             messages=[
@@ -56,6 +60,7 @@ async def research_chat(
                 },
             ],
             temperature=0.2,
+            max_tokens=settings.safety_model_output_tokens,
         )
         answer = completion.choices[0].message.content or ""
         if not answer.strip():

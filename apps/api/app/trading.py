@@ -163,6 +163,15 @@ def _risk_checks(
         ),
     ]
     if provider == "alpaca":
+        # A sell limit is a price floor, never an execution-notional ceiling.
+        # Reject every broker sell (including potential shorts) without querying
+        # holdings. This also protects direct submit_order callers and aliases.
+        checks.append(RiskCheck(
+            name="券商成交金额边界",
+            passed=intent.side == "buy" and intent.order_type == "limit",
+            severity="blocker",
+            message="券商仅允许限价买单；卖单无法界定成交金额上界，且不支持新增空头。",
+        ))
         checks.append(
             RiskCheck(
                 name="券商凭证",
@@ -194,6 +203,7 @@ def _risk_checks(
 
 
 def _submit_internal_sandbox_order(preview: OrderPreview) -> OrderReceipt:
+    # Deterministic estimate-only receipt: no fills or evolving position ledger.
     receipt = OrderReceipt(
         id=f"sandbox_{uuid4().hex[:12]}",
         status="accepted_sandbox",

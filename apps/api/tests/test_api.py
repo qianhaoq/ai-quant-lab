@@ -8,7 +8,7 @@ from app.models import OrderIntent
 from app.trading import TradingGatewayError, build_status, get_account, get_positions, submit_order
 
 
-client = TestClient(app)
+client = TestClient(app, headers={"Authorization": "Bearer test-operator-token"})
 
 
 class FakeAlpacaResponse:
@@ -203,6 +203,7 @@ def test_order_submit_requires_confirmation_phrase() -> None:
 
 
 def test_order_submit_accepts_internal_sandbox_order() -> None:
+    approval = client.post("/trading/orders/preview", json={"symbol": "SPY", "side": "buy", "quantity": 2}).json()["approval_token"]
     response = client.post(
         "/trading/orders",
         json={
@@ -212,6 +213,7 @@ def test_order_submit_accepts_internal_sandbox_order() -> None:
             "order_type": "market",
             "time_in_force": "day",
             "confirmation_phrase": "确认提交 买入 2 SPY",
+            "approval_token": approval,
         },
     )
     assert response.status_code == 201
@@ -289,7 +291,8 @@ def test_alpaca_paper_order_submission_uses_risk_and_confirmation(monkeypatch: p
             symbol="SPY",
             side="buy",
             quantity=1,
-            order_type="market",
+            order_type="limit",
+            limit_price=100,
             time_in_force="day",
             confirmation_phrase="确认提交 买入 1 SPY",
         ),
@@ -311,7 +314,8 @@ def test_alpaca_paper_order_submission_uses_risk_and_confirmation(monkeypatch: p
                 "symbol": "SPY",
                 "qty": 1.0,
                 "side": "buy",
-                "type": "market",
+                "type": "limit",
+                "limit_price": 100.0,
                 "time_in_force": "day",
             },
             "timeout": 10,
@@ -331,7 +335,8 @@ def test_alpaca_submit_still_requires_confirmation(monkeypatch: pytest.MonkeyPat
                 symbol="SPY",
                 side="buy",
                 quantity=1,
-                order_type="market",
+                order_type="limit",
+                limit_price=100,
                 time_in_force="day",
                 confirmation_phrase="确认提交 买入 2 SPY",
             ),
@@ -362,7 +367,8 @@ def test_alpaca_rejected_order_returns_broker_message(monkeypatch: pytest.Monkey
                 symbol="SPY",
                 side="buy",
                 quantity=1,
-                order_type="market",
+                order_type="limit",
+                limit_price=100,
                 time_in_force="day",
                 confirmation_phrase="确认提交 买入 1 SPY",
             ),

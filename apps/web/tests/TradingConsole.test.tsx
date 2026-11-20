@@ -25,9 +25,11 @@ const status: TradingStatus = {
 describe("TradingConsole", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    sessionStorage.clear();
   });
 
   it("previews risk checks and submits a confirmed sandbox order", async () => {
+    sessionStorage.setItem("aql-api-token", "fake-browser-token");
     const user = userEvent.setup();
     const onPreviewChange = vi.fn();
     const onReceiptChange = vi.fn();
@@ -35,6 +37,7 @@ describe("TradingConsole", () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
+          approval_token: "fake-one-use-approval",
           accepted: true,
           broker_provider: "internal_sandbox",
           broker_mode: "sandbox",
@@ -89,6 +92,9 @@ describe("TradingConsole", () => {
 
     await user.click(screen.getByRole("button", { name: /确认提交到沙箱/i }));
 
+    const calls = vi.mocked(global.fetch).mock.calls;
+    expect(calls[0][1]?.headers).toEqual(expect.objectContaining({ Authorization: "Bearer fake-browser-token" }));
+    expect(JSON.parse(calls[1][1]?.body as string)).toEqual(expect.objectContaining({ approval_token: "fake-one-use-approval" }));
     await waitFor(() => {
       expect(onReceiptChange).toHaveBeenCalledWith(expect.objectContaining({ status: "accepted_sandbox" }));
     });
